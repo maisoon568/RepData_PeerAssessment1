@@ -4,7 +4,7 @@ author: "Maisoon"
 date: "November 19, 2020"
 output:
   html_document: default
-
+    keep_md: true
 ---
   ```{r}
 knitr::opts_chunk$set(echo = TRUE, fig.path="figures/")
