@@ -1,25 +1,138 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
+title: "Activity Monitoring"
+author: "Maisoon"
+date: "November 19, 2020"
+output:
+  html_document: default
+
 ---
+```{r}
+knitr::opts_chunk$set(echo = TRUE,fig.path="figures/")
+```
+#Introduction:
+
+#### We want to record and analyse the steps of an individual per day for two months.
 
 
-## Loading and preprocessing the data
+##1.Loading and preprocessing the data
+```{r}
+URL="https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip"
+download.file(URL,destfile="./stepsdata")
+unzip("stepsdata")
+activity=read.csv("activity.csv")
+head(activity)
+```
+
+
+##2.What is mean total number of steps taken per day?
+
+### Total number of steps taken per day
+```{r}
+activity$date=as.Date(activity$date)  ##change class of date to "Date"
+stepsperday=tapply(activity$steps, activity$date, sum)
+head(stepsperday)
+```
+
+### Histogram of the total number of steps taken each day
+```{r}
+hist(stepsperday,breaks=30,label=FALSE,main="Daily Steps",xlab="Steps",col="red")
+```
+
+### Mean and Median of the total number of steps taken per day after removing NA
+mean:
+```{r}
+mean(stepsperday,na.rm=TRUE)
+```
+median:
+```{r}
+median(stepsperday,na.rm=TRUE)
+```
+
+
+##3. What is the average daily activity pattern?
+
+### Time series plot of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
+```{r}
+AverageActivity=aggregate(steps~interval,activity,mean,na.rm=TRUE)
+library(ggplot2)
+ggplot(AverageActivity,aes(interval,steps))+geom_line(col="red")+ggtitle("Average Activity Pattern")
+```
+
+### 5-minute interval containing the maximum number of steps 
+```{r}
+AverageActivity[AverageActivity$steps==max(AverageActivity$steps),1]
+```
+
+
+##4. Imputing missing values
+
+### Total number of missing values in the dataset 
+```{r}
+sum(is.na(activity$steps))
+```
+
+### Filling in all of the missing values in the dataset by using mean of the 5-min interval
+```{r}
+merge=merge(activity,AverageActivity,by="interval")
+for(i in 1:nrow(activity)){
+    if(is.na(merge[i,"steps.x"])){
+    merge[i,"steps.x"]=merge[i,"steps.y"]
+    }
+}
+head(merge)
+```
+
+### Creating new dataset that is equal to the original dataset but with the missing data filled in
+```{r}
+ActivityNoNA=data.frame(steps=merge$steps.x,date=merge$date,interval=merge$interval)
+head(ActivityNoNA)
+```
+
+### Histogram of the total number of steps taken each day
+```{r}
+ActivityNoNA$date=as.Date(ActivityNoNA$date)
+NoNAstepsperday=with(ActivityNoNA,tapply(steps,date,sum))
+hist(NoNAstepsperday,label=FALSE,breaks=30,xlab="Steps",col="red",main="Daily Steps")
+```
+
+#### The mean and median total number of steps taken per day after replacing NA
+mean:
+```{r}
+mean(NoNAstepsperday)
+```
+median:
+```{r}
+median(NoNAstepsperday)
+```
+Conclusion: 
+
+-The mean of the steps per day stayed the same after the replacements of NA
+
+-The median increased by about 0.01% after the replacements of NA
+
+
+##5.Are there differences in activity patterns between weekdays and weekends?
+
+### Creating a new factor variable in the dataset with two levels – “weekday” and “weekend” indicating whether a given date is a weekday or weekend day.
+```{r}
+ActivityNoNA$day=rep(NA,nrow(ActivityNoNA))
+for(i in 1:nrow(ActivityNoNA)){
+                 if(weekdays(ActivityNoNA$date[i])=="Satuday"|
+                    weekdays(ActivityNoNA$date[i])=="Sunday"){
+                    ActivityNoNA$day[i]="Weekend"
+                  }else{
+                    ActivityNoNA$day[i]="Weekday"
+                  }
+}
+ActivityNoNA$day=factor(ActivityNoNA$day,labels = c("Weekday","Weekend"))
+head(ActivityNoNA)
+```
+
+### Time series plot of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis)
+```{r}
+meanperday=aggregate(steps~interval+day,ActivityNoNA,mean)
+ggplot(meanperday,aes(interval,steps,color=day))+geom_line()+facet_wrap(.~day,ncol=1,nrow=2)+ggtitle("Average of Steps across Weekdays and Weekends")
+```
 
 
 
-## What is mean total number of steps taken per day?
-
-
-
-## What is the average daily activity pattern?
-
-
-
-## Imputing missing values
-
-
-
-## Are there differences in activity patterns between weekdays and weekends?
